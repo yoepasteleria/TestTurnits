@@ -21,7 +21,7 @@ const APPS_SCRIPT_URL =
 const BCRYPT_ROUNDS  = 10;
 const CACHE_DURATION = 20_000;
 const JWT_EXPIRY     = "7d";
-const API_URL        = process.env.API_URL || "https://negosocio.onrender.com";
+const API_URL        = process.env.API_URL || "https://testturnits.onrender.com";
 
 const DIAS_PRUEBA        = parseInt(process.env.DIAS_PRUEBA       || "15");
 const PRECIO_RENOVACION  = parseInt(process.env.PRECIO_RENOVACION || "19000");

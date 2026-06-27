@@ -264,7 +264,7 @@ function enviarMailTurno({ adminEmail, emailCliente, nombreCliente, fechaHora, s
 // ══════════════════════════════════════════════════════════════
 // RUTAS BASE
 // ══════════════════════════════════════════════════════════════
-app.get("/",       (_, res) => res.json({ status: "online", version: "13.3", timestamp: new Date().toISOString() }));
+app.get("/",       (_, res) => res.json({ status: "online", version: "13.4", timestamp: new Date().toISOString() }));
 app.get("/health", (_, res) => res.json({ status: "ok",     timestamp: new Date().toISOString() }));
 
 // ══════════════════════════════════════════════════════════════
@@ -335,8 +335,6 @@ app.post("/registro/iniciar", limiterAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 // REGISTRO — PASO 2
 // POST /registro/verificar
-// FIX: eliminado el bloque duplicado con logs temporales que
-//      quedaba fuera del try/catch y generaba errores de scope.
 // ══════════════════════════════════════════════════════════════
 app.post("/registro/verificar", limiterAuth, async (req, res) => {
   try {
@@ -1611,7 +1609,8 @@ app.post("/auth/forgot-password", limiterAuth, async (req, res) => {
       reset_token_expiry: expiry.toISOString(),
     }).eq("id", user.id);
 
-    const resetUrl = `https://encouraging-otter-312778.framer.app//cambiar-contraseña?token=${token}`;
+    // ── FIX v13.4: usa PANEL_URL del entorno en lugar de turnits.com hardcodeado ──
+    const resetUrl = `${PANEL_URL.replace("/panel", "")}/cambiar-contraseña?token=${token}`;
 
     fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -1896,7 +1895,6 @@ app.get("/oauth-callback", async (req, res) => {
 // WEBHOOKS
 // ══════════════════════════════════════════════════════════════
 async function procesarPagoConfirmado({ slug, nombre, apellido, telefono, email, fecha, hora, servicio_id, servicio_nombre, monto, moneda, metodo_pago, precio_servicio, payment_id, estado, porcentaje_sena }) {
-  // La unicidad de payment_id también está garantizada por el UNIQUE de la DB
   const { data: turnoExistente } = await supabase
     .from("turnos").select("id").eq("payment_id", String(payment_id)).maybeSingle();
   if (turnoExistente) { console.log(`⚠️ Pago ${payment_id} ya procesado, ignorando.`); return; }
@@ -2076,8 +2074,8 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════════════╗
-  ║   Turnits API v13.3                          ║
-  ║   Fix: RLS registros_pendientes + typo mail  ║
+  ║   Turnits API v13.4 — TEST                   ║
+  ║   Fix: resetUrl usa PANEL_URL del entorno    ║
   ║   Puerto: ${PORT}                              ║
   ╚═══════════════════════════════════════════════╝
   `);

@@ -26,9 +26,9 @@ const API_URL        = process.env.API_URL || "https://testturnits.onrender.com"
 const DIAS_PRUEBA        = parseInt(process.env.DIAS_PRUEBA       || "15");
 const PRECIO_RENOVACION  = parseInt(process.env.PRECIO_RENOVACION || "19000");
 const MP_PLATFORM_TOKEN  = process.env.MP_PLATFORM_TOKEN          || "";
-const PANEL_URL          = process.env.PANEL_URL                  || "https://turnits.com/panel";
-const SUCCESS_URL        = process.env.SUCCESS_URL                || "https://turnits.com/success";
-const ERROR_URL          = process.env.ERROR_URL                  || "https://turnits.com/error";
+const PANEL_URL          = process.env.PANEL_URL                  || "https://encouraging-otter-312778.framer.app/panel";
+const SUCCESS_URL        = process.env.SUCCESS_URL                || "https://encouraging-otter-312778.framer.app/success";
+const ERROR_URL          = process.env.ERROR_URL                  || "https://encouraging-otter-312778.framer.app/error";
 const RENOVACION_SUCCESS = process.env.RENOVACION_SUCCESS_URL     || `${PANEL_URL}?status=renovacion_ok`;
 const RENOVACION_CANCEL  = process.env.RENOVACION_CANCEL_URL      || `${PANEL_URL}?status=renovacion_cancel`;
 

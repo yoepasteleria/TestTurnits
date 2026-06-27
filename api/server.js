@@ -112,7 +112,7 @@ const limiterBooking = rateLimit({ windowMs: 60 * 1000,       max: 20,  message:
 const limiterAPI     = rateLimit({ windowMs: 60 * 1000,       max: 200 });
 
 // ══════════════════════════════════════════════════════════════
-// MIDDLEWARES  ← CORREGIDO (faltaba "app.")
+// MIDDLEWARES
 // ══════════════════════════════════════════════════════════════
 app.use(cors({
   origin: "*",
@@ -219,7 +219,7 @@ function agruparPagos(turnos, hoyISO) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// HELPER: ENVIAR MAIL DE TURNO  ← CORREGIDO (era S_SCRIPT_URL)
+// HELPER: ENVIAR MAIL DE TURNO
 // ══════════════════════════════════════════════════════════════
 function enviarMailTurno({ adminEmail, emailCliente, nombreCliente, fechaHora, slug, servicio, precioTotal, montoOnline, metodoPago }) {
   const panelUrl = `${PANEL_URL}?u=${slug}`;
@@ -228,7 +228,7 @@ function enviarMailTurno({ adminEmail, emailCliente, nombreCliente, fechaHora, s
     method: "POST",
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({
-      action:        "newointmentEmail",
+      action:        "newAppointmentEmail",
       nombreCliente,
       fechaHora,
       adminEmail,
@@ -264,7 +264,7 @@ function enviarMailTurno({ adminEmail, emailCliente, nombreCliente, fechaHora, s
 // ══════════════════════════════════════════════════════════════
 // RUTAS BASE
 // ══════════════════════════════════════════════════════════════
-app.get("/",       (_, res) => res.json({ status: "online", version: "13.2", timestamp: new Date().toISOString() }));
+app.get("/",       (_, res) => res.json({ status: "online", version: "13.3", timestamp: new Date().toISOString() }));
 app.get("/health", (_, res) => res.json({ status: "ok",     timestamp: new Date().toISOString() }));
 
 // ══════════════════════════════════════════════════════════════
@@ -335,6 +335,8 @@ app.post("/registro/iniciar", limiterAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 // REGISTRO — PASO 2
 // POST /registro/verificar
+// FIX: eliminado el bloque duplicado con logs temporales que
+//      quedaba fuera del try/catch y generaba errores de scope.
 // ══════════════════════════════════════════════════════════════
 app.post("/registro/verificar", limiterAuth, async (req, res) => {
   try {
@@ -433,17 +435,6 @@ app.post("/registro/verificar", limiterAuth, async (req, res) => {
     console.error("Error en /registro/verificar:", e.message);
     res.status(500).json({ success: false, error: e.message });
   }
-
-      // LOG TEMPORAL
-    console.log("🔍 VERIFICAR - body recibido:", JSON.stringify(req.body));
-    console.log("🔍 email limpio:", email?.trim().toLowerCase());
-    
-    const { data: pendiente, error } = await supabase
-      .from("registros_pendientes").select("*")
-      .eq("email", email?.trim().toLowerCase()).maybeSingle();
-    
-    // LOG TEMPORAL  
-    console.log("🔍 resultado supabase:", JSON.stringify({ pendiente, error }));
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -1033,7 +1024,6 @@ app.post("/turnos/reservar", limiterBooking, async (req, res) => {
     const estaSuspendido = user.estado_suscripcion === "suspendido" || (diasRestantes !== null && diasRestantes <= 0);
     if (estaSuspendido) return res.status(403).json({ success: false, error: "Este servicio está pausado temporalmente." });
 
-    // ── NUEVO: plan gratis sin MP no puede ofrecer turnos sin cobro ──
     const esPlanGratis = user.plan === "gratis";
     const tieneMP      = !!user.mp_access_token;
     const requierePago = tieneMP && (user.metodo_pago === "sena" || user.metodo_pago === "total");
@@ -1112,6 +1102,7 @@ app.post("/turnos/reservar", limiterBooking, async (req, res) => {
     res.status(500).json({ success: false, error: e.message });
   }
 });
+
 // ══════════════════════════════════════════════════════════════
 // TURNOS — COMPROBANTE PÚBLICO
 // GET /turnos/publico/:id
@@ -1405,10 +1396,10 @@ app.get("/admin-stats/:slug", requireAuth, async (req, res) => {
                         : (user.duracion_turno || 30),
     })).reverse();
 
-const turnosHoyDetalle = turnosData
-    .filter((t) => t.fecha === hoyISO)
-    .sort((a, b) => a.hora.localeCompare(b.hora))
-    .map((t) => ({
+    const turnosHoyDetalle = turnosData
+      .filter((t) => t.fecha === hoyISO)
+      .sort((a, b) => a.hora.localeCompare(b.hora))
+      .map((t) => ({
         id:             t.id,
         nombre:         t.nombre,
         hora:           t.hora.slice(0, 5),
@@ -1417,7 +1408,7 @@ const turnosHoyDetalle = turnosData
         pago_estado:    t.pago_estado    || "sin_pago",
         metodo_pago:    t.metodo_pago    || "none",
         precio_cobrado: t.precio_cobrado || 0,
-    }));
+      }));
 
     const desde90 = new Date(ahoraArg); desde90.setDate(desde90.getDate() - 90);
     const hasta7  = new Date(ahoraArg); hasta7.setDate(hasta7.getDate() + 7);
@@ -1905,6 +1896,7 @@ app.get("/oauth-callback", async (req, res) => {
 // WEBHOOKS
 // ══════════════════════════════════════════════════════════════
 async function procesarPagoConfirmado({ slug, nombre, apellido, telefono, email, fecha, hora, servicio_id, servicio_nombre, monto, moneda, metodo_pago, precio_servicio, payment_id, estado, porcentaje_sena }) {
+  // La unicidad de payment_id también está garantizada por el UNIQUE de la DB
   const { data: turnoExistente } = await supabase
     .from("turnos").select("id").eq("payment_id", String(payment_id)).maybeSingle();
   if (turnoExistente) { console.log(`⚠️ Pago ${payment_id} ya procesado, ignorando.`); return; }
@@ -1935,7 +1927,6 @@ async function procesarPagoConfirmado({ slug, nombre, apellido, telefono, email,
       if (turnoError.code === "23505") { console.log(`⚠️ Turno duplicado bloqueado por DB: ${payment_id}`); }
       else throw turnoError;
     } else if (user?.email) {
-      const saldoRestante = metodo_pago === "sena" && precio_servicio > monto ? precio_servicio - monto : 0;
       enviarMailTurno({
         adminEmail:    user.email,
         emailCliente:  email?.trim().toLowerCase() || "",
@@ -2085,8 +2076,8 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════════════╗
-  ║   Associe API v13.2                          ║
-  ║   Fix: app.use() y APPS_SCRIPT_URL           ║
+  ║   Turnits API v13.3                          ║
+  ║   Fix: RLS registros_pendientes + typo mail  ║
   ║   Puerto: ${PORT}                              ║
   ╚═══════════════════════════════════════════════╝
   `);

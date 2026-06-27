@@ -1611,7 +1611,7 @@ app.post("/auth/forgot-password", limiterAuth, async (req, res) => {
       reset_token_expiry: expiry.toISOString(),
     }).eq("id", user.id);
 
-    const resetUrl = `https://turnits.com/cambiar-contraseña?token=${token}`;
+    const resetUrl = `https://encouraging-otter-312778.framer.app//cambiar-contraseña?token=${token}`;
 
     fetch(APPS_SCRIPT_URL, {
       method: "POST",

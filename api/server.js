@@ -478,6 +478,21 @@ app.post("/registro/reenviar-codigo", limiterAuth, async (req, res) => {
   }
 });
 
+app.post("/registro/verificar", limiterAuth, async (req, res) => {
+  try {
+    const { email, codigo } = req.body;
+    
+    // LOG TEMPORAL
+    console.log("🔍 VERIFICAR - body recibido:", JSON.stringify(req.body));
+    console.log("🔍 email limpio:", email?.trim().toLowerCase());
+    
+    const { data: pendiente, error } = await supabase
+      .from("registros_pendientes").select("*")
+      .eq("email", email?.trim().toLowerCase()).maybeSingle();
+    
+    // LOG TEMPORAL  
+    console.log("🔍 resultado supabase:", JSON.stringify({ pendiente, error }));
+
 // ══════════════════════════════════════════════════════════════
 // TURNOS — Check cliente duplicado
 // POST /turnos/check-cliente
